@@ -61,7 +61,8 @@ export interface ServiceFeedback {
     user_id: number;
     sp_id: number;
     srv_id: number;
-    feedback: string;
+  feedback: string;
+  rating: number;
     created_at: Generated<string>;
 }
 

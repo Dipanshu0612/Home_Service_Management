@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { configDotenv } from "dotenv";
 import verifyToken from "../middleware/auth.js";
 import moment from "moment";
-import { NewUser, Service, User } from "../database/kysely.js";
+import { Feedback, NewUser, Service, User } from "../database/kysely.js";
 import { db } from "../database/db.js";
 
 configDotenv();
@@ -173,7 +173,7 @@ UserRouter.get(
         return;
       }
       const services = await db
-        .selectFrom("service_data")
+        .selectFrom("service_data").selectAll()
         .where("user_id", "=", user_id)
         .execute();
       res.status(200).json({services});
@@ -185,5 +185,61 @@ UserRouter.get(
     }
   }
 );
+
+UserRouter.get("/view-services/:srv_id",
+  //@ts-ignore
+  verifyToken,
+  async (req: MyRequest, res: Response) => { 
+    try {
+      const { srv_id } = req.params;
+      const { user_id } = req.user;
+      if (!user_id) {
+        res
+          .status(400)
+          .json({ message: "User ID not found! Please login again" });
+        return;
+      }
+      const service = await db
+        .selectFrom("service_data")
+        .selectAll()
+        .where("srv_id", "=", Number(srv_id))
+        .execute();
+      
+      if (service.length === 0) {
+        res.status(404).json({ message: `No service found with ID ${srv_id}!` });
+        return;
+      }
+      res.status(200).json({service});
+    } catch (error) {
+      res.status(500).json({
+        message: "Oops, Something Bad Happened!",
+        error: error.message,
+      });
+    }
+  })
+
+UserRouter.post("/feedback", async (req: Request, res: Response) => {
+  try {
+    const { user_id, sp_id, srv_id, feedback ,rating }: Feedback = req.body;
+    if (!user_id || !sp_id || !srv_id || !rating) {
+      res.status(400).json("Incomplete details! Please fill all the fields");
+      return;
+    }
+    const result = await db
+      .insertInto("service_feedback")
+      .values({ user_id, sp_id, srv_id, feedback, rating })
+      .executeTakeFirst();
+    res.status(200).json({
+      message: "Feedback Submitted Successfully!",
+      feedback_id: Number(result.insertId),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Oops, Something Bad Happened!",
+      error: error.message,
+    });
+  }
+});
+
 
 export default UserRouter;
