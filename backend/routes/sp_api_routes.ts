@@ -89,28 +89,41 @@ SpRouter.get(
   verifyToken,
   async (req: MyRequest, res: Response) => {
     try {
-      const sp_id  = req.user.id;
-      const services = await db
+      const sp_id = req.user.id;
+      let services = await db
         .selectFrom("service_data")
         .selectAll()
         .where("sp_id", "=", sp_id)
         .execute();
       if (services.length === 0) {
-        res
-          .status(404)
-          .json({
-            message: "No Services Found for service provider with ID: " + sp_id,
-          });
+        res.status(404).json({
+          message: "No Services Found for service provider with ID: " + sp_id,
+        });
         return;
       }
+      services = services.map((service) => {
+        const formattedService = {
+          ...service,
+          start_time: moment(service.start_time).format("YYYY-MM-DD HH:mm:ss"),
+          created_at: moment(service.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        };
+
+        if (service.end_time) {
+          formattedService.end_time = moment(service.end_time).format(
+            "YYYY-MM-DD HH:mm:ss"
+          );
+        } else {
+          formattedService.end_time = "Not yet completed";
+        }
+
+        return formattedService;
+      });
       res.status(200).json({ services });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          message: "Oops, Something Bad Happened!",
-          error: error.message,
-        });
+      res.status(500).json({
+        message: "Oops, Something Bad Happened!",
+        error: error.message,
+      });
     }
   }
 );
@@ -121,16 +134,99 @@ SpRouter.get(
   verifyToken,
   async (req: MyRequest, res: Response) => {
     try {
-      const { sp_id } = req.user;
+      const sp_id = req.user.id;
       const { srv_id } = req.params;
-      const service = await db.selectFrom('service_data').selectAll().where('sp_id', "=", sp_id).execute();
-      if (service.length === 0) {
+      let service = await db
+        .selectFrom("service_data")
+        .selectAll()
+        .where("sp_id", "=", sp_id)
+        .executeTakeFirst();
+      
+      if (!service) {
         res.status(404).json({ message: "No service found with ID:" + srv_id });
         return;
       }
+      service.start_time = moment(service.start_time).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
+      service.end_time = service.end_time
+        ? moment(service.end_time).format("YYYY-MM-DD HH:mm:ss")
+        : "Not yet completed";
+      service.created_at = moment(service.created_at).format(
+        "YYYY-MM-DD HH:mm:ss"
+      );
+
       res.status(200).json({ service });
     } catch (error) {
-      res.status(500).json({ message: "Oops, Something Bad Happend!", error: error.message });
+      res.status(500).json({
+        message: "Oops, Something Bad Happend!",
+        error: error.message,
+      });
+    }
+  }
+);
+
+SpRouter.put(
+  "/sp-services/:srv_id/status",
+  //@ts-ignore
+  verifyToken,
+  async (req: MyRequest, res: Response) => {
+    try {
+      const sp_id = req.user.id;
+      const { srv_id } = req.params;
+      const { status } = req.body;
+      console.log();
+      if (!status) {
+        res.status(400).json({ message: "Please provide the status" });
+        return;
+      }
+      const service = await db
+        .selectFrom("service_data")
+        .select("status")
+        .where("sp_id", "=", sp_id)
+        .where("srv_id", "=", Number(srv_id))
+        .executeTakeFirst();
+      if (!service) {
+        res.status(404).json({ message: "No service found with ID:" + srv_id });
+        return;
+      }
+
+      await db
+        .updateTable("service_data")
+        .set({ status })
+        .where("sp_id", "=", sp_id)
+        .where("srv_id", "=", Number(srv_id))
+        .execute();
+
+      const newServiceProv = await db
+        .selectFrom("sp_data")
+        .select("services_provided")
+        .where("sp_id", "=", sp_id)
+        .execute();
+
+      await db
+        .updateTable("sp_data")
+        .set({
+          services_provided: newServiceProv[0]?.services_provided
+            ? newServiceProv[0].services_provided + 1
+            : 1,
+        })
+        .where("sp_id", "=", sp_id)
+        .execute();
+
+      await db
+        .updateTable("sp_data")
+        .set({ availability: 1 })
+        .where("sp_id", "=", sp_id)
+        .execute();
+
+      res
+        .status(200)
+        .json({ message: "Service status has been updated successfully!" });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ mesage: "Oops, Something bad happend!", error: error.message });
     }
   }
 );
