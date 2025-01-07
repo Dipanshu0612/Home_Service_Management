@@ -18,7 +18,7 @@ function calcRating(
   beforeRating: number,
   newRating: number,
   totalServices: number
-):number {
+): number {
   return Number(((beforeRating + newRating) / totalServices).toFixed(1));
 }
 
@@ -94,6 +94,48 @@ UserRouter.post("/user-login", async (req: Request, res: Response) => {
   }
 });
 
+UserRouter.get(
+  "/user-profile",
+  //@ts-ignore
+  verifyToken,
+  async (req: MyRequest, res: Response) => {
+    try {
+      const { user_id } = req.user;
+      if (!user_id) {
+        res
+          .status(400)
+          .json({ message: "User ID not found! Please login again" });
+        return;
+      }
+      const profile = await db
+        .selectFrom("user_details")
+        .selectAll()
+        .where("user_id", "=", user_id)
+        .executeTakeFirst();
+      if (!profile) {
+        res
+          .status(404)
+          .json({ message: "No profile found for User ID:" + user_id });
+        return;
+      }
+      profile.created_at = moment(profile.created_at).format(
+        "YYYY-MM-DD HH:MM:SS"
+      );
+      profile.user_pass = "**********";
+
+
+      res.status(200).json({ message: "My Profile", profile });
+    } catch (error) {
+      res
+        .status(500)
+        .json({
+          message: "Oops, Something Bad Happened!",
+          error: error.message,
+        });
+    }
+  }
+);
+
 UserRouter.post(
   "/request-service",
   //@ts-ignore
@@ -136,18 +178,19 @@ UserRouter.post(
         .set({ availability: 0 })
         .where("sp_id", "=", sp_id)
         .execute();
-      
-      const newServiceReq =
-        await db
-          .selectFrom("users_data")
-          .select("services_requested")
-          .where("user_id", "=", user_id)
-          .execute()
+
+      const newServiceReq = await db
+        .selectFrom("users_data")
+        .select("services_requested")
+        .where("user_id", "=", user_id)
+        .execute();
 
       await db
         .updateTable("users_data")
         .set({
-          services_requested: newServiceReq[0]?.services_requested ? newServiceReq[0].services_requested + 1 : 1,
+          services_requested: newServiceReq[0]?.services_requested
+            ? newServiceReq[0].services_requested + 1
+            : 1,
         })
         .where("user_id", "=", user_id)
         .execute();
@@ -281,7 +324,9 @@ UserRouter.post(
       const { srv_id } = req.params;
       const { feedback, rating }: Feedback = req.body;
       if (!user_id || !srv_id || !rating) {
-        res.status(400).json({message:"Incomplete details! Please fill all the fields"});
+        res
+          .status(400)
+          .json({ message: "Incomplete details! Please fill all the fields" });
         return;
       }
       const sp = await db
@@ -289,7 +334,7 @@ UserRouter.post(
         .select(["sp_id", "status"])
         .where("srv_id", "=", Number(srv_id))
         .executeTakeFirst();
-      
+
       if (!sp) {
         res.status(404).json({ message: "No service found with ID:" + srv_id });
         return;
@@ -312,20 +357,24 @@ UserRouter.post(
           rating,
         })
         .executeTakeFirst();
-      
+
       res.status(200).json({
         message: "Feedback Submitted Successfully!",
         feedback_id: Number(result.insertId),
       });
 
-      await db.updateTable("service_data").set({ rating }).where("srv_id", "=", Number(srv_id)).execute();
-      
+      await db
+        .updateTable("service_data")
+        .set({ rating })
+        .where("srv_id", "=", Number(srv_id))
+        .execute();
+
       const spData = await db
         .selectFrom("sp_data")
         .select(["rating", "services_provided"])
         .where("sp_id", "=", sp.sp_id)
         .executeTakeFirst();
-      
+
       if (!spData) {
         res
           .status(404)

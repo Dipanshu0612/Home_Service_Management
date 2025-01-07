@@ -5,6 +5,8 @@ export interface Database {
   sp_data: SpData;
   service_data: ServiceData;
   service_feedback: ServiceFeedback;
+  user_details: UserDetails;
+  sp_details: SpDetails;
 }
 
 export interface UserData {
@@ -68,3 +70,26 @@ export interface ServiceFeedback {
 
 export type Feedback = Selectable<ServiceFeedback>;
 export type NewFeedback = Insertable<ServiceFeedback>;
+
+
+export interface UserDetails{
+  user_id: number,
+  user_name: string,
+  user_email: string,
+  user_pass: string,
+  contact: number,
+  address: string,
+  services_requested: number,
+  created_at: string
+}
+export interface SpDetails {
+  sp_id: number;
+  sp_name: string;
+  sp_email: string;
+  sp_pass: string;
+  contact: number;
+  services_provided: number;
+  skill: string;
+  rating: number;
+  created_at: string;
+}

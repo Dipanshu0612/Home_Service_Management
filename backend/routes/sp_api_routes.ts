@@ -84,6 +84,50 @@ SpRouter.post("/sp-login", async (req: Request, res: Response) => {
 });
 
 SpRouter.get(
+  "/sp-profile",
+  //@ts-ignore
+  verifyToken,
+  async (req: MyRequest, res: Response) => {
+    try {
+      const sp_id = req.user.id;
+      if (!sp_id) {
+        res
+          .status(400)
+          .json({
+            message: "Service Provider ID not found! Please login again",
+          });
+        return;
+      }
+      let profile = await db
+        .selectFrom("sp_details")
+        .selectAll()
+        .where("sp_id", "=", sp_id)
+        .executeTakeFirst();
+      if (!profile) {
+        res
+          .status(404)
+          .json({
+            message: "No profile found for Service Provider with ID:" + sp_id,
+          });
+        return;
+      }
+
+      profile.created_at = moment(profile.created_at).format(
+        "YYYY-MM-DD HH:MM:SS"
+      );
+      profile.sp_pass = "**********";
+
+      res.status(200).json({ message: "My Profile", profile });
+    } catch (error) {
+      res.status(500).json({
+        message: "Oops, Something Bad Happened!",
+        error: error.message,
+      });
+    }
+  }
+);
+
+SpRouter.get(
   "/sp-services",
   //@ts-ignore
   verifyToken,
@@ -141,7 +185,7 @@ SpRouter.get(
         .selectAll()
         .where("srv_id", "=", Number(srv_id))
         .executeTakeFirst();
-      
+
       if (!service) {
         res.status(404).json({ message: "No service found with ID:" + srv_id });
         return;
