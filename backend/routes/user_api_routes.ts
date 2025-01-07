@@ -244,6 +244,13 @@ UserRouter.get(
         return;
       }
 
+      if (service.user_id !== user_id) {
+        res.status(403).json({
+          message: `User with ID: ${user_id} is not authorized to access service with ID: ${srv_id}!`,
+        });
+        return;
+      }
+
       service.start_time = moment(service.start_time).format(
         "YYYY-MM-DD HH:mm:ss"
       );

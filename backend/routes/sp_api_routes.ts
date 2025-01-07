@@ -139,13 +139,21 @@ SpRouter.get(
       let service = await db
         .selectFrom("service_data")
         .selectAll()
-        .where("sp_id", "=", sp_id)
+        .where("srv_id", "=", Number(srv_id))
         .executeTakeFirst();
       
       if (!service) {
         res.status(404).json({ message: "No service found with ID:" + srv_id });
         return;
       }
+
+      if (service.sp_id !== sp_id) {
+        res.status(403).json({
+          message: `Service Provider with ID: ${sp_id} is not authorized to access service with ID: ${srv_id}!`,
+        });
+        return;
+      }
+
       service.start_time = moment(service.start_time).format(
         "YYYY-MM-DD HH:mm:ss"
       );
