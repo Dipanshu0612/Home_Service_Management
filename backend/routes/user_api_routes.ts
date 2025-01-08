@@ -142,9 +142,9 @@ UserRouter.post(
   verifyToken,
   async (req: MyRequest, res: Response) => {
     try {
-      const { sp_id, srv_type, start_time, service_charge }: Service = req.body;
+      const { sp_id, start_time, service_charge }: Service = req.body;
       const { user_id } = req.user;
-      if (!sp_id || !srv_type || !start_time || !service_charge) {
+      if (!sp_id || !start_time || !service_charge) {
         res.status(400).json("Incomplete details! Please fill all the fields");
         return;
       }
@@ -157,7 +157,7 @@ UserRouter.post(
 
       const sp_free = await db
         .selectFrom("sp_data")
-        .select("availability")
+        .select(["availability", "service_type"])
         .where("sp_id", "=", sp_id)
         .execute();
 
@@ -170,7 +170,7 @@ UserRouter.post(
       }
       const request = await db
         .insertInto("service_data")
-        .values({ user_id, sp_id, srv_type, start_time, service_charge })
+        .values({ user_id, sp_id, srv_type:sp_free[0].service_type, start_time, service_charge })
         .executeTakeFirst();
 
       await db

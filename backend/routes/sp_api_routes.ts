@@ -23,7 +23,7 @@ SpRouter.get("/", async (req: Request, res: Response) => {
 
 SpRouter.post("/sp-register", async (req: Request, res: Response) => {
   try {
-    const { sp_name, sp_email, sp_pass, skill, contact }: NewSp = req.body;
+    const { sp_name, sp_email, sp_pass, skill, service_type ,contact }: NewSp = req.body;
     if (!sp_name || !sp_email || !sp_pass || !skill || !contact) {
       res.status(400).json("Incomplete details! Please fill all the fields");
       return;
@@ -36,6 +36,7 @@ SpRouter.post("/sp-register", async (req: Request, res: Response) => {
         sp_email,
         sp_pass: hashedPassword,
         skill,
+        service_type,
         contact,
       })
       .executeTakeFirst();

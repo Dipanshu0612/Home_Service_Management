@@ -30,6 +30,7 @@ export interface SpData {
   sp_email: string;
   sp_pass: string;
   skill: string;
+  service_type:string,
   services_provided?: number;
   contact: number;
   rating?: number;
