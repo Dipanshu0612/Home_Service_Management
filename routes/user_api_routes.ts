@@ -213,7 +213,6 @@ UserRouter.post(
         message: "Oops, Something Bad Happened!",
         error: error.message,
       });
-      console.log(error);
     }
   }
 );
