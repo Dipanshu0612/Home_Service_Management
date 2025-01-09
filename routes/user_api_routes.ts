@@ -170,17 +170,17 @@ UserRouter.post(
       }
       const request = await db
         .insertInto("service_data")
-        .values({ user_id, sp_id, srv_type:sp_free[0].service_type, start_time, service_charge })
+        .values({ user_id, sp_id, srv_type:sp_free[0].service_type, start_time, service_charge, recurring_request})
         .executeTakeFirst();
       
-      if (recurring_request) {
-        await db
-          .updateTable("service_data")
-          .set({
-            recurring_request
-          })
-          .execute();
-      }
+      // if (recurring_request) {
+      //   await db
+      //     .updateTable("service_data")
+      //     .set({
+      //       recurring_request
+      //     })
+      //     .execute();
+      // }
 
       // await db
       //   .updateTable("sp_data")
@@ -213,6 +213,7 @@ UserRouter.post(
         message: "Oops, Something Bad Happened!",
         error: error.message,
       });
+      console.log(error);
     }
   }
 );
