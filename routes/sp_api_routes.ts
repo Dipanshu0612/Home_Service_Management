@@ -234,16 +234,21 @@ SpRouter.put(
         return;
       }
       const service = await db
-        .selectFrom("service_data")
-        .select("status")
-        .where("sp_id", "=", sp_id)
-        .where("srv_id", "=", Number(srv_id))
+      .selectFrom("service_data")
+      .select("status")
+      .where("sp_id", "=", sp_id)
+      .where("srv_id", "=", Number(srv_id))
         .executeTakeFirst();
       if (!service) {
         res.status(404).json({ message: "No service found with ID:" + srv_id });
         return;
       }
-
+      
+      if (status !== "Completed") {
+        res.status(400).json({ message: "Invalid Status!" });
+        return;
+      }
+      
       await db
         .updateTable("service_data")
         .set({ status })

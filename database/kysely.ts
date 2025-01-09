@@ -52,6 +52,7 @@ export interface ServiceData {
   end_time?: string;
   rating?: number;
   service_charge: number;
+  recurring_request?: string;
   created_at: Generated<string>;
 }
 
